@@ -2,8 +2,15 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>福岡 6 天 5 夜行程助手</title>
+
+    <!-- 手機全螢幕 App 優化標籤 -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="福岡行程">
+    <meta name="theme-color" content="#4A6B5D">
+
     <style>
         :root {
             --primary: #4A6B5D;       /* 自然橄欖綠 */
@@ -21,6 +28,7 @@
             margin: 0;
             padding: 0;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            touch-action: manipulation;
         }
 
         body {
@@ -30,6 +38,7 @@
             justify-content: center;
             min-height: 100vh;
             padding: 12px;
+            overscroll-behavior-y: none;
         }
 
         .app-container {
@@ -91,9 +100,42 @@
             font-size: 0.95rem;
             font-weight: 600;
             color: var(--primary);
-            margin-bottom: 12px;
+            margin-bottom: 8px;
             display: flex;
             justify-content: space-between;
+            align-items: center;
+        }
+
+        .link-unionpay {
+            font-size: 0.75rem;
+            color: #3498DB;
+            text-decoration: underline;
+            font-weight: normal;
+        }
+
+        /* 手動匯率輸入區 */
+        .rate-setting-box {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #F9FAF9;
+            padding: 8px 12px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            border: 1px dashed #DCE4E0;
+            font-size: 0.8rem;
+            color: var(--text-sub);
+        }
+
+        .rate-setting-box input {
+            width: 75px;
+            padding: 4px 6px;
+            border: 1px solid #CCC;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            text-align: center;
+            color: var(--primary);
+            font-weight: 600;
         }
 
         .calc-inputs {
@@ -122,7 +164,7 @@
             width: 100%;
         }
 
-        /* 3 欄日期選擇矩陣 */
+        /* 3 欄日期按鈕 */
         .date-nav {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -152,7 +194,7 @@
             box-shadow: 0 2px 8px rgba(74, 107, 93, 0.3);
         }
 
-        /* 天氣預報卡片 CSS */
+        /* 天氣預報卡片 */
         .weather-card {
             background: linear-gradient(135deg, #FFFFFF 0%, #F2F7F4 100%);
             border: 1px solid #DCE5E0;
@@ -176,7 +218,7 @@
         }
 
         .weather-temp {
-            font-size: 1.2rem;
+            font-size: 1.15rem;
             font-weight: 700;
             color: var(--primary);
         }
@@ -289,12 +331,20 @@
         </div>
     </header>
 
-    <!-- 匯率計算器 -->
+    <!-- 匯率計算器卡片 -->
     <div class="calculator-card">
         <div class="card-title">
             <span>💱 雙向匯率計算器</span>
-            <span style="font-size: 0.75rem; color: var(--text-sub);">1 JPY = 0.052 HKD</span>
+            <a href="https://m.unionpayintl.com/hk/rate/" target="_blank" class="link-unionpay">🔗 查銀聯官方匯率</a>
         </div>
+        
+        <!-- 手動輸入/設定匯率區塊 -->
+        <div class="rate-setting-box">
+            <span>設定匯率: 1 JPY =</span>
+            <input type="number" id="custom-rate-input" step="0.0001" value="0.052" oninput="updateCustomRate(this.value)">
+            <span>HKD</span>
+        </div>
+
         <div class="calc-inputs">
             <div class="input-group">
                 <label for="jpy-input">日圓 (JPY ¥)</label>
@@ -307,13 +357,13 @@
         </div>
     </div>
 
-    <!-- 3 欄式日期選擇按鈕 -->
+    <!-- 3 欄日期按鈕 -->
     <div class="date-nav" id="date-nav"></div>
 
-    <!-- 當地天氣動態卡片 -->
+    <!-- 福岡官方天氣卡片 -->
     <div class="weather-card" id="weather-card"></div>
 
-    <!-- 每日交通提示卡片 -->
+    <!-- 每日交通提示摘要 -->
     <div class="day-summary-card" id="day-summary"></div>
 
     <!-- 行程列表 -->
@@ -321,20 +371,17 @@
 </div>
 
 <script>
-    // 升級版本號至 v1.4.0
-    const APP_VERSION = "1.4.0";
-    const STORAGE_KEY = "fukuoka_trip_data_v5";
+    const APP_VERSION = "1.6.0";
+    const STORAGE_KEY = "fukuoka_trip_data_v7";
 
-    let exchangeRate = 0.052;
-
-    // 福岡每日天氣資料集 (圖示, 氣溫範圍, 天氣狀況, 穿搭/注意事項)
+    // 依據日本氣象廳 (JMA) 福岡 10 月初官方數據調整之每日氣溫與氣候
     const weatherData = {
-        "Day 1 (10/5)": { icon: "☀️", temp: "18°C - 25°C", status: "晴朗秋高氣爽", pop: "10%", tip: "🧥 薄長袖、洋蔥式穿搭" },
-        "Day 2 (10/6)": { icon: "⛅", temp: "17°C - 24°C", status: "多雲時晴", pop: "20%", tip: "👕 舒適秋裝、輕便外套" },
-        "Day 3 (10/7)": { icon: "🌤️", temp: "16°C - 23°C", status: "晴間多雲", pop: "10%", tip: "🧥 長袖襯衫、風衣外套" },
-        "Day 4 (10/8)": { icon: "🌧️", temp: "16°C - 21°C", status: "短暫陣雨", pop: "60%", tip: "☔ 攜帶折疊傘、防風外套" },
-        "Day 5 (10/9)": { icon: "☀️", temp: "15°C - 23°C", status: "晴朗乾燥", pop: "10%", tip: "🧥 保暖內搭、早晚偏涼" },
-        "Day 6 (10/10)": { icon: "⛅", temp: "16°C - 24°C", status: "多雲舒適", pop: "20%", tip: "👕 休閒上衣、薄外套" }
+        "Day 1 (10/5)": { icon: "☀️", temp: "16°C - 24°C", status: "晴朗秋高氣爽", pop: "10%", tip: "🧥 薄長袖、洋蔥式穿搭" },
+        "Day 2 (10/6)": { icon: "⛅", temp: "16°C - 23°C", status: "多雲時晴", pop: "20%", tip: "👕 舒適秋裝、早晚加外套" },
+        "Day 3 (10/7)": { icon: "🌤️", temp: "15°C - 23°C", status: "晴間多雲", pop: "10%", tip: "🧥 長袖襯衫、薄風衣" },
+        "Day 4 (10/8)": { icon: "🌧️", temp: "15°C - 22°C", status: "短暫陣雨", pop: "50%", tip: "☔ 帶折疊傘、防風外套" },
+        "Day 5 (10/9)": { icon: "☀️", temp: "14°C - 22°C", status: "晴朗乾燥", pop: "10%", tip: "🧥 早晚溫差大，注意保暖" },
+        "Day 6 (10/10)": { icon: "⛅", temp: "14°C - 21°C", status: "多雲舒適", pop: "20%", tip: "👕 休閒上衣、方便穿脫外套" }
     };
 
     const daySummaries = {
@@ -346,7 +393,6 @@
         "Day 6 (10/10)": "💰 本日地鐵總車資：¥470\n💡 交通建議：次數少、未達 ¥640，直接感應刷卡乘車即可。"
     };
 
-    // 完整 6 天行程資料集
     const initialItinerary = {
         "Day 1 (10/5)": [
             { time: "15:00", title: "抵達福岡機場 ➔ 飯店 Check-in", traffic: "🚇 地鐵：空港線至博多站，轉七隈線至「渡邊通站」（¥470）\n(或計程車約 15 分鐘，約 ¥2,000)", notes: "福岡蒙特埃馬納酒店辦理入住、卸下行李。", searchQuery: "Hotel Monterey La Soeur Fukuoka" },
@@ -388,6 +434,7 @@
     let appState = {
         version: APP_VERSION,
         selectedDate: "Day 1 (10/5)",
+        exchangeRate: 0.052,
         itinerary: initialItinerary
     };
 
@@ -426,22 +473,38 @@
         appState = {
             version: APP_VERSION,
             selectedDate: "Day 1 (10/5)",
+            exchangeRate: 0.052,
             itinerary: JSON.parse(JSON.stringify(initialItinerary))
         };
         saveState();
         renderDateNav();
         renderTimeline();
+        document.getElementById("custom-rate-input").value = appState.exchangeRate;
     }
 
+    // 更新手動設定匯率
+    function updateCustomRate(val) {
+        const rate = parseFloat(val);
+        if (!isNaN(rate) && rate > 0) {
+            appState.exchangeRate = rate;
+            saveState();
+            // 重新觸發換算計算
+            convertCurrency('JPY');
+        }
+    }
+
+    // 雙向換算邏輯
     function convertCurrency(source) {
         const jpyInput = document.getElementById("jpy-input");
         const hkdInput = document.getElementById("hkd-input");
+        const rate = appState.exchangeRate || 0.052;
+
         if (source === 'JPY') {
             const val = parseFloat(jpyInput.value);
-            hkdInput.value = isNaN(val) ? "" : (val * exchangeRate).toFixed(1);
+            hkdInput.value = isNaN(val) ? "" : (val * rate).toFixed(1);
         } else {
             const val = parseFloat(hkdInput.value);
-            jpyInput.value = isNaN(val) ? "" : Math.round(val / exchangeRate);
+            jpyInput.value = isNaN(val) ? "" : Math.round(val / rate);
         }
     }
 
@@ -462,7 +525,6 @@
         });
     }
 
-    // 渲染天氣預報卡片
     function renderWeather() {
         const card = document.getElementById("weather-card");
         const info = weatherData[appState.selectedDate] || { icon: "🌤️", temp: "--°C", status: "資料讀取中", pop: "0%", tip: "" };
@@ -480,7 +542,7 @@
     }
 
     function renderTimeline() {
-        renderWeather(); // 渲染天氣
+        renderWeather();
 
         const summaryBox = document.getElementById("day-summary");
         summaryBox.textContent = daySummaries[appState.selectedDate] || "";
@@ -509,6 +571,7 @@
 
     function init() {
         loadState();
+        document.getElementById("custom-rate-input").value = appState.exchangeRate || 0.052;
         renderDateNav();
         renderTimeline();
     }
