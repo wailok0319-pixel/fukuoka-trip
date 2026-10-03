@@ -1,509 +1,398 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
-<html>
+<!DOCTYPE html>
+<html lang="zh-TW">
 <head>
-  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-  <meta http-equiv="Content-Style-Type" content="text/css">
-  <title></title>
-  <meta name="Generator" content="Cocoa HTML Writer">
-  <meta name="CocoaVersion" content="2202.7">
-  <style type="text/css">
-    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica}
-    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; min-height: 14.0px}
-    p.p3 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px 'PingFang HK'}
-    span.s1 {font: 12.0px 'PingFang HK'}
-    span.s2 {font: 12.0px 'Apple Color Emoji'}
-    span.s3 {font: 12.0px Helvetica}
-    span.s4 {font: 12.0px 'Zapf Dingbats'}
-  </style>
+    <!-- 1. 文件編碼與響應式視圖設定 -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>福岡 6 天 5 夜行程助手</title>
+    
+    <!-- 2. CSS 樣式設定：手機 App 風格與自然系配色 -->
+    <style>
+        :root {
+            --primary: #4A6B5D;       /* 主色：自然橄欖綠 */
+            --primary-light: #E8EFEA; /* 淺綠底色 */
+            --bg: #F7F6F2;            /* 背景：柔和米白 */
+            --card-bg: #FFFFFF;       /* 卡片：純白 */
+            --text-main: #2C3E35;     /* 主文字顏色 */
+            --text-sub: #6B7C72;      /* 次要文字顏色 */
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            --radius: 16px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 12px;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 480px;
+            background: var(--bg);
+            padding-bottom: 40px;
+        }
+
+        /* 頂部標頭與狀態顯示 */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 8px;
+            margin-bottom: 12px;
+        }
+
+        h1 {
+            font-size: 1.25rem;
+            color: var(--primary);
+            font-weight: 700;
+        }
+
+        .status-badge {
+            font-size: 0.8rem;
+            padding: 4px 10px;
+            background: var(--card-bg);
+            border-radius: 20px;
+            box-shadow: var(--shadow);
+            color: var(--text-sub);
+        }
+
+        /* 匯率計算器卡片 */
+        .calculator-card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            padding: 16px;
+            box-shadow: var(--shadow);
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .calc-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .input-group label {
+            font-size: 0.75rem;
+            color: var(--text-sub);
+        }
+
+        .input-group input {
+            padding: 8px 12px;
+            border: 1px solid #E0E5E2;
+            border-radius: 8px;
+            font-size: 1rem;
+            outline: none;
+            width: 100%;
+        }
+
+        .input-group input:focus {
+            border-color: var(--primary);
+        }
+
+        /* 日期選擇按鈕區 */
+        .date-nav {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 8px;
+            margin-bottom: 16px;
+            scrollbar-width: none;
+        }
+
+        .date-nav::-webkit-scrollbar {
+            display: none;
+        }
+
+        .date-btn {
+            flex: 0 0 auto;
+            padding: 8px 16px;
+            background: var(--card-bg);
+            border: 1px solid #E0E5E2;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            color: var(--text-sub);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .date-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(74, 107, 93, 0.3);
+        }
+
+        /* 行程時間軸與卡片 */
+        .timeline {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .item-card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            padding: 16px;
+            box-shadow: var(--shadow);
+            border-left: 4px solid var(--primary);
+        }
+
+        .time-badge {
+            display: inline-block;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--primary);
+            background: var(--primary-light);
+            padding: 2px 8px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+
+        .spot-name {
+            font-size: 1.05rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-main);
+        }
+
+        .traffic-box {
+            background: #F9FAF9;
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 0.825rem;
+            color: var(--text-sub);
+            margin-bottom: 10px;
+            line-height: 1.4;
+            border: 1px dashed #DCE4E0;
+        }
+
+        .notes-box {
+            font-size: 0.825rem;
+            color: #555;
+            margin-bottom: 12px;
+            line-height: 1.4;
+        }
+
+        .card-actions {
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .btn-map {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: var(--primary);
+            color: white;
+            text-decoration: none;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+    </style>
 </head>
 <body>
-<p class="p1">&lt;!DOCTYPE html&gt;</p>
-<p class="p1">&lt;html lang="zh-TW"&gt;</p>
-<p class="p1">&lt;head&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;meta charset="UTF-8"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;title&gt;<span class="s1">福岡</span> 6 <span class="s1">天</span> 5 <span class="s1">夜行程助手</span>&lt;/title&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;style&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>:root {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>--primary: #4A6B5D;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>--primary-light: #E8EFEA;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>--bg: #F7F6F2;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>--card-bg: #FFFFFF;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>--text-main: #2C3E35;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>--text-sub: #6B7C72;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>--accent: #D9822B;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>--shadow: 0 4px 12px rgba(0, 0, 0, 0.05);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>--radius: 16px;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>* {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>box-sizing: border-box;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>margin: 0;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>padding: 0;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>body {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>background-color: var(--bg);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>color: var(--text-main);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>display: flex;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>justify-content: center;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>min-height: 100vh;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>padding: 12px;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>.app-container {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>width: 100%;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>max-width: 480px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>background: var(--bg);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>padding-bottom: 40px;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>/* <span class="s1">標頭與儲存狀態</span> */</p>
-<p class="p1"><span class="Apple-converted-space">        </span>header {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>display: flex;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>justify-content: space-between;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>align-items: center;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>padding: 16px 8px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>margin-bottom: 12px;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>h1 {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>font-size: 1.25rem;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>color: var(--primary);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>font-weight: 700;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>.status-badge {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>font-size: 0.8rem;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>padding: 4px 10px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>background: var(--card-bg);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>border-radius: 20px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>box-shadow: var(--shadow);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>color: var(--text-sub);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>display: flex;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>align-items: center;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>gap: 4px;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>/* <span class="s1">匯率計算器卡片</span> */</p>
-<p class="p1"><span class="Apple-converted-space">        </span>.calculator-card {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>background: var(--card-bg);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>border-radius: var(--radius);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>padding: 16px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>box-shadow: var(--shadow);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>margin-bottom: 20px;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>.card-title {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>font-size: 0.95rem;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>font-weight: 600;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>color: var(--primary);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>margin-bottom: 12px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>display: flex;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>justify-content: space-between;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>.calc-inputs {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>display: grid;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>grid-template-columns: 1fr 1fr;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>gap: 12px;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>.input-group {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>display: flex;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>flex-direction: column;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>gap: 4px;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>.input-group label {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>font-size: 0.75rem;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>color: var(--text-sub);</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>.input-group input {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>padding: 8px 12px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>border: 1px solid #E0E5E2;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>border-radius: 8px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>font-size: 1rem;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>outline: none;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>width: 100%;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>.input-group input:focus {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>border-color: var(--primary);</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>/* <span class="s1">日期選擇按鈕欄</span> */</p>
-<p class="p1"><span class="Apple-converted-space">        </span>.date-nav {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>display: flex;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>gap: 8px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>overflow-x: auto;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>padding-bottom: 8px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>margin-bottom: 16px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>scrollbar-width: none;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>.date-nav::-webkit-scrollbar {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>display: none;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>.date-btn {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>flex: 0 0 auto;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>padding: 8px 16px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>background: var(--card-bg);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>border: 1px solid #E0E5E2;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>border-radius: 20px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>font-size: 0.85rem;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>color: var(--text-sub);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>cursor: pointer;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>transition: all 0.2s ease;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>.date-btn.active {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>background: var(--primary);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>color: white;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>border-color: var(--primary);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>font-weight: 600;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>box-shadow: 0 2px 8px rgba(74, 107, 93, 0.3);</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>/* <span class="s1">行程卡片</span> */</p>
-<p class="p1"><span class="Apple-converted-space">        </span>.timeline {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>display: flex;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>flex-direction: column;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>gap: 16px;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>.item-card {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>background: var(--card-bg);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>border-radius: var(--radius);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>padding: 16px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>box-shadow: var(--shadow);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>border-left: 4px solid var(--primary);</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>.time-badge {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>display: inline-block;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>font-size: 0.8rem;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>font-weight: 700;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>color: var(--primary);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>background: var(--primary-light);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>padding: 2px 8px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>border-radius: 6px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>margin-bottom: 8px;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>.spot-name {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>font-size: 1.05rem;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>font-weight: 600;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>margin-bottom: 8px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>color: var(--text-main);</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>.traffic-box {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>background: #F9FAF9;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>border-radius: 8px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>padding: 10px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>font-size: 0.825rem;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>color: var(--text-sub);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>margin-bottom: 10px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>line-height: 1.4;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>border: 1px dashed #DCE4E0;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>.notes-box {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>font-size: 0.825rem;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>color: #555;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>margin-bottom: 12px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>line-height: 1.4;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>.card-actions {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>display: flex;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>justify-content: flex-end;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>gap: 8px;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>.btn-map {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>display: inline-flex;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>align-items: center;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>gap: 4px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>background: var(--primary);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>color: white;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>text-decoration: none;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>padding: 6px 12px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>border-radius: 8px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>font-size: 0.8rem;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>font-weight: 500;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>.btn-map:hover {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>opacity: 0.9;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;/style&gt;</p>
-<p class="p1">&lt;/head&gt;</p>
-<p class="p1">&lt;body&gt;</p>
-<p class="p2"><br></p>
-<p class="p1">&lt;div class="app-container"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;!-- Header --&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;header&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;h1&gt;<span class="s1">福岡行程助手</span>&lt;/h1&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;div id="status-badge" class="status-badge"&gt;<span class="s2">💾</span> <span class="s1">已儲存</span>&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;/header&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;!-- <span class="s1">匯率計算器卡片</span> --&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="calculator-card"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="card-title"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;span&gt;<span class="s2">💱</span> <span class="s1">雙向匯率計算器</span>&lt;/span&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;span style="font-size: 0.75rem; color: var(--text-sub);"&gt;<span class="s1">基準</span>: 1 JPY = 0.052 HKD&lt;/span&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="calc-inputs"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;div class="input-group"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;label for="jpy-input"&gt;<span class="s1">日圓</span> (JPY ¥)&lt;/label&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;input type="number" id="jpy-input" placeholder="0" oninput="convertCurrency('JPY')"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;div class="input-group"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;label for="hkd-input"&gt;<span class="s1">港幣</span> (HKD $)&lt;/label&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;input type="number" id="hkd-input" placeholder="0" oninput="convertCurrency('HKD')"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;!-- <span class="s1">日期選擇按鈕欄</span> --&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="date-nav" id="date-nav"&gt;&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;!-- <span class="s1">行程動態列表</span> --&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="timeline" id="timeline"&gt;&lt;/div&gt;</p>
-<p class="p1">&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1">&lt;script&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>// <span class="s1">應用程式版本與儲存</span> Key (<span class="s1">滿足需求</span> 4)</p>
-<p class="p1"><span class="Apple-converted-space">    </span>const APP_VERSION = "1.0.0";</p>
-<p class="p1"><span class="Apple-converted-space">    </span>const STORAGE_KEY = "fukuoka_trip_data_v1";</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>// <span class="s1">匯率預設值</span> (1 JPY = 0.052 HKD)</p>
-<p class="p1"><span class="Apple-converted-space">    </span>let exchangeRate = 0.052;</p>
-<p class="p2"><br></p>
-<p class="p3"><span class="s3"><span class="Apple-converted-space">    </span>// </span>預設行程資料<span class="s3"> (</span>來自專案文件內容<span class="s3">)</span></p>
-<p class="p1"><span class="Apple-converted-space">    </span>const initialItinerary = {</p>
-<p class="p1"><span class="Apple-converted-space">        </span>"Day 1 (10/5)": [</p>
-<p class="p1"><span class="Apple-converted-space">            </span>{</p>
-<p class="p1"><span class="Apple-converted-space">                </span>time: "15:00",</p>
-<p class="p1"><span class="Apple-converted-space">                </span>title: "<span class="s1">抵達福岡機場</span> <span class="s4">➔</span> <span class="s1">飯店</span> Check-in",</p>
-<p class="p1"><span class="Apple-converted-space">                </span>traffic: "<span class="s2">🚇</span> <span class="s1">地鐵：空港線至博多站，轉七隈線至「渡邊通站」</span>(2<span class="s1">號出口離站，車資</span> ¥470)",</p>
-<p class="p1"><span class="Apple-converted-space">                </span>notes: "<span class="s1">福岡蒙特埃馬納酒店辦理入住、卸下行李。</span>",</p>
-<p class="p1"><span class="Apple-converted-space">                </span>searchQuery: "Hotel Monterey La Soeur Fukuoka"</p>
-<p class="p1"><span class="Apple-converted-space">            </span>},</p>
-<p class="p1"><span class="Apple-converted-space">            </span>{</p>
-<p class="p1"><span class="Apple-converted-space">                </span>time: "16:30",</p>
-<p class="p1"><span class="Apple-converted-space">                </span>title: "<span class="s1">祇園周邊輕鬆散步</span>",</p>
-<p class="p1"><span class="Apple-converted-space">                </span>traffic: "<span class="s2">🚶</span> <span class="s1">步行：渡邊通</span> <span class="s4">➔</span> <span class="s1">祇園約</span> 12-15 <span class="s1">分鐘（或搭地鐵七隈線</span> 1 <span class="s1">站</span> ¥210<span class="s1">）</span>",</p>
-<p class="p1"><span class="Apple-converted-space">                </span>notes: "• Full Full <span class="s1">明太子麵包（</span>10:00-19:00<span class="s1">）</span>\n• FUK COFFEE <span class="s1">咖啡與布丁（</span>08:00-20:00<span class="s1">）</span>\n• <span class="s1">櫛田神社（</span>17:00 <span class="s1">關門）</span>",</p>
-<p class="p1"><span class="Apple-converted-space">                </span>searchQuery: "<span class="s1">櫛田神社</span>"</p>
-<p class="p1"><span class="Apple-converted-space">            </span>},</p>
-<p class="p1"><span class="Apple-converted-space">            </span>{</p>
-<p class="p1"><span class="Apple-converted-space">                </span>time: "18:00",</p>
-<p class="p1"><span class="Apple-converted-space">                </span>title: "<span class="s1">博多運河城</span> (Alpen FUKUOKA) + ShinShin<span class="s1">拉麵</span>",</p>
-<p class="p1"><span class="Apple-converted-space">                </span>traffic: "<span class="s2">🚶</span> <span class="s1">步行：櫛田神社</span> <span class="s4">➔</span> <span class="s1">運河城約</span> 5 <span class="s1">分鐘，運河城</span> <span class="s4">➔</span> KITTE<span class="s1">博多約</span> 8 <span class="s1">分鐘</span>",</p>
-<p class="p1"><span class="Apple-converted-space">                </span>notes: "• Alpen FUKUOKA<span class="s1">：九州最大足球專區（營業至</span> 21:00<span class="s1">）</span>\n• ShinShin KITTE<span class="s1">店：</span>11:00-23:00",</p>
-<p class="p1"><span class="Apple-converted-space">                </span>searchQuery: "<span class="s1">博多運河城</span>"</p>
-<p class="p1"><span class="Apple-converted-space">            </span>},</p>
-<p class="p1"><span class="Apple-converted-space">            </span>{</p>
-<p class="p1"><span class="Apple-converted-space">                </span>time: "21:00",</p>
-<p class="p1"><span class="Apple-converted-space">                </span>title: "<span class="s1">中洲屋台</span> <span class="s1">宵夜體驗</span>",</p>
-<p class="p1"><span class="Apple-converted-space">                </span>traffic: "<span class="s2">🚶</span> <span class="s1">步行：中洲</span> <span class="s4">➔</span> <span class="s1">渡邊通飯店約</span> 10 <span class="s1">分鐘</span>",</p>
-<p class="p1"><span class="Apple-converted-space">                </span>notes: "<span class="s1">體驗在地屋台文化後返回飯店休息。</span>",</p>
-<p class="p1"><span class="Apple-converted-space">                </span>searchQuery: "<span class="s1">中洲屋台</span>"</p>
-<p class="p1"><span class="Apple-converted-space">            </span>}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>],</p>
-<p class="p1"><span class="Apple-converted-space">        </span>"Day 2 (10/6)": [</p>
-<p class="p1"><span class="Apple-converted-space">            </span>{</p>
-<p class="p1"><span class="Apple-converted-space">                </span>time: "09:30",</p>
-<p class="p1"><span class="Apple-converted-space">                </span>title: "<span class="s1">前往</span> THE OUTLETS KITAKYUSHU",</p>
-<p class="p1"><span class="Apple-converted-space">                </span>traffic: "<span class="s2">🚇</span> <span class="s1">地鐵：渡邊通</span> <span class="s4">➔</span> <span class="s1">博多（七隈線</span> ¥210<span class="s1">）</span>\n<span class="s2">🚆</span> JR<span class="s1">：博多</span> <span class="s4">➔</span> <span class="s1">スペースワールド站（</span>JR <span class="s1">快速</span> ¥1,130<span class="s1">，出站即可到達</span> Outlet<span class="s1">）</span>",</p>
-<p class="p1"><span class="Apple-converted-space">                </span>notes: "JR <span class="s1">快速列車每小時</span> 3-4 <span class="s1">班，車程約</span> 60 <span class="s1">分鐘。</span>",</p>
-<p class="p1"><span class="Apple-converted-space">                </span>searchQuery: "THE OUTLETS KITAKYUSHU"</p>
-<p class="p1"><span class="Apple-converted-space">            </span>},</p>
-<p class="p1"><span class="Apple-converted-space">            </span>{</p>
-<p class="p1"><span class="Apple-converted-space">                </span>time: "18:30",</p>
-<p class="p1"><span class="Apple-converted-space">                </span>title: "<span class="s1">晚餐：泰元燒肉（舞鶴店）</span>",</p>
-<p class="p1"><span class="Apple-converted-space">                </span>traffic: "<span class="s2">🚕</span> <span class="s1">計程車約</span> 6 <span class="s1">分鐘（約</span> ¥1,000<span class="s1">）或搭地鐵天神</span> <span class="s4">➔</span> <span class="s1">赤坂站</span> 1<span class="s1">號出口步行</span> 5 <span class="s1">分鐘</span>",</p>
-<p class="p1"><span class="Apple-converted-space">                </span>notes: "<span class="s1">營業時間：</span>17:00-22:00<span class="s1">，地址：中央區舞鶴</span> 3-1-8<span class="s1">。</span>",</p>
-<p class="p1"><span class="Apple-converted-space">                </span>searchQuery: "<span class="s1">泰元燒肉</span> <span class="s1">舞鶴店</span>"</p>
-<p class="p1"><span class="Apple-converted-space">            </span>}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>],</p>
-<p class="p1"><span class="Apple-converted-space">        </span>"Day 3 (10/7)": [</p>
-<p class="p1"><span class="Apple-converted-space">            </span>{</p>
-<p class="p1"><span class="Apple-converted-space">                </span>time: "11:30",</p>
-<p class="p1"><span class="Apple-converted-space">                </span>title: "<span class="s1">午餐：</span>Nobosemon <span class="s1">天婦羅</span>",</p>
-<p class="p1"><span class="Apple-converted-space">                </span>traffic: "<span class="s2">🚇</span> <span class="s1">地鐵：渡邊通</span> <span class="s4">➔</span> <span class="s1">天神</span> <span class="s4">➔</span> <span class="s1">西新站（</span>1<span class="s1">號出口步行約</span> 3 <span class="s1">分鐘，</span>¥260<span class="s1">）</span>",</p>
-<p class="p1"><span class="Apple-converted-space">                </span>notes: "<span class="s1">營業時間：</span>11:30-15:00<span class="s1">，地址：早良區西新</span> 5-1-11<span class="s1">。</span>",</p>
-<p class="p1"><span class="Apple-converted-space">                </span>searchQuery: "Nobosemon <span class="s1">福岡</span>"</p>
-<p class="p1"><span class="Apple-converted-space">            </span>},</p>
-<p class="p1"><span class="Apple-converted-space">            </span>{</p>
-<p class="p1"><span class="Apple-converted-space">                </span>time: "13:30",</p>
-<p class="p1"><span class="Apple-converted-space">                </span>title: "<span class="s1">天神商圈巡禮</span>",</p>
-<p class="p1"><span class="Apple-converted-space">                </span>traffic: "<span class="s2">🚇</span> <span class="s1">地鐵：西新站</span> <span class="s4">➔</span> <span class="s1">天神站（</span>¥260<span class="s1">）</span>",</p>
-<p class="p1"><span class="Apple-converted-space">                </span>notes: "<span class="s1">天神地下街直通</span> PARCO<span class="s1">、</span>Mina<span class="s1">天神、</span>ONE FUKUOKA BLDG<span class="s1">，採購極便利。</span>",</p>
-<p class="p1"><span class="Apple-converted-space">                </span>searchQuery: "<span class="s1">天神地下街</span>"</p>
-<p class="p1"><span class="Apple-converted-space">            </span>}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>],</p>
-<p class="p1"><span class="Apple-converted-space">        </span>"Day 4 (10/8)": [</p>
-<p class="p1"><span class="Apple-converted-space">            </span>{</p>
-<p class="p1"><span class="Apple-converted-space">                </span>time: "11:30",</p>
-<p class="p1"><span class="Apple-converted-space">                </span>title: "<span class="s1">午餐：</span>Tomoike <span class="s1">豚白湯拉麵</span>",</p>
-<p class="p1"><span class="Apple-converted-space">                </span>traffic: "<span class="s2">🚇</span> <span class="s1">地鐵：渡邊通</span> <span class="s4">➔</span> <span class="s1">藤崎站（</span>2<span class="s1">號出口步行</span> 6 <span class="s1">分鐘，</span>¥260<span class="s1">）</span>",</p>
-<p class="p1"><span class="Apple-converted-space">                </span>notes: "<span class="s1">營業時間：</span>11:30-18:45<span class="s1">，地址：早良區昭代</span> 3-12-20<span class="s1">。</span>",</p>
-<p class="p1"><span class="Apple-converted-space">                </span>searchQuery: "<span class="s1">豚白湯創作麺処</span> <span class="s1">友池</span>"</p>
-<p class="p1"><span class="Apple-converted-space">            </span>},</p>
-<p class="p1"><span class="Apple-converted-space">            </span>{</p>
-<p class="p1"><span class="Apple-converted-space">                </span>time: "16:30",</p>
-<p class="p1"><span class="Apple-converted-space">                </span>title: "LaLaport <span class="s1">福岡（</span>1:1 <span class="s1">鋼彈</span> + SOCCER SHOP KAMO<span class="s1">）</span>",</p>
-<p class="p1"><span class="Apple-converted-space">                </span>traffic: "<span class="s2">🚌</span> <span class="s1">公車：博多站筑紫口</span> <span class="s4">➔</span> LaLaport<span class="s1">（西鐵公車</span> ¥240<span class="s1">）</span>",</p>
-<p class="p1"><span class="Apple-converted-space">                </span>notes: "<span class="s1">看夜間</span> 1:1 <span class="s1">鋼彈打燈，並參觀</span> 3F KAMO <span class="s1">足球專賣店。</span>",</p>
-<p class="p1"><span class="Apple-converted-space">                </span>searchQuery: "Mitsui Shopping Park LaLaport FUKUOKA"</p>
-<p class="p1"><span class="Apple-converted-space">            </span>}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>],</p>
-<p class="p1"><span class="Apple-converted-space">        </span>"Day 5 (10/9)": [</p>
-<p class="p1"><span class="Apple-converted-space">            </span>{</p>
-<p class="p1"><span class="Apple-converted-space">                </span>time: "11:30",</p>
-<p class="p1"><span class="Apple-converted-space">                </span>title: "<span class="s1">午餐：海進丸海鮮壽司</span>",</p>
-<p class="p1"><span class="Apple-converted-space">                </span>traffic: "<span class="s2">🚇</span> <span class="s1">地鐵：渡邊通</span> <span class="s4">➔</span> <span class="s1">西新站（</span>4<span class="s1">號出口步行</span> 4 <span class="s1">分鐘，</span>¥260<span class="s1">）</span>",</p>
-<p class="p1"><span class="Apple-converted-space">                </span>notes: "<span class="s1">博多割烹</span> <span class="s1">流れ鮨</span> <span class="s1">海進丸（</span>11:30-15:00<span class="s1">）。</span>",</p>
-<p class="p1"><span class="Apple-converted-space">                </span>searchQuery: "<span class="s1">流れ鮨</span> <span class="s1">海進丸</span> <span class="s1">西新</span>"</p>
-<p class="p1"><span class="Apple-converted-space">            </span>},</p>
-<p class="p1"><span class="Apple-converted-space">            </span>{</p>
-<p class="p1"><span class="Apple-converted-space">                </span>time: "13:30",</p>
-<p class="p1"><span class="Apple-converted-space">                </span>title: "<span class="s1">博多車站商圈採購</span> (Pokémon Center)",</p>
-<p class="p1"><span class="Apple-converted-space">                </span>traffic: "<span class="s2">🚇</span> <span class="s1">地鐵：西新站</span> <span class="s4">➔</span> <span class="s1">博多站（空港線</span> ¥290<span class="s1">）</span>",</p>
-<p class="p1"><span class="Apple-converted-space">                </span>notes: "KITTE <span class="s1">博多</span> 2F <span class="s1">寶可夢中心採購。</span>",</p>
-<p class="p1"><span class="Apple-converted-space">                </span>searchQuery: "Pokémon Center FUKUOKA"</p>
-<p class="p1"><span class="Apple-converted-space">            </span>}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>],</p>
-<p class="p1"><span class="Apple-converted-space">        </span>"Day 6 (10/10)": [</p>
-<p class="p1"><span class="Apple-converted-space">            </span>{</p>
-<p class="p1"><span class="Apple-converted-space">                </span>time: "11:30",</p>
-<p class="p1"><span class="Apple-converted-space">                </span>title: "<span class="s1">午餐：西新初喜</span> <span class="s1">壽喜燒</span>",</p>
-<p class="p1"><span class="Apple-converted-space">                </span>traffic: "<span class="s2">🚶</span> <span class="s1">位於</span> AMU PLAZA 10 <span class="s1">樓（博多站直通）</span>",</p>
-<p class="p1"><span class="Apple-converted-space">                </span>notes: "<span class="s1">建議提早預訂，享受離境前大餐。</span>",</p>
-<p class="p1"><span class="Apple-converted-space">                </span>searchQuery: "<span class="s1">西新初喜</span> <span class="s1">くうてん博多店</span>"</p>
-<p class="p1"><span class="Apple-converted-space">            </span>},</p>
-<p class="p1"><span class="Apple-converted-space">            </span>{</p>
-<p class="p1"><span class="Apple-converted-space">                </span>time: "14:00",</p>
-<p class="p1"><span class="Apple-converted-space">                </span>title: "<span class="s1">前往福岡機場離境</span>",</p>
-<p class="p1"><span class="Apple-converted-space">                </span>traffic: "<span class="s2">🚇</span> <span class="s1">地鐵：博多</span> <span class="s4">➔</span> <span class="s1">福岡機場站（</span>2<span class="s1">號出口，</span>¥260<span class="s1">），轉乘免費接駁巴士至國際線航廈</span>",</p>
-<p class="p1"><span class="Apple-converted-space">                </span>notes: "<span class="s1">搭乘</span> 16:00 <span class="s1">班機返回香港。</span>",</p>
-<p class="p1"><span class="Apple-converted-space">                </span>searchQuery: "<span class="s1">福岡機場</span> <span class="s1">國際線</span>"</p>
-<p class="p1"><span class="Apple-converted-space">            </span>}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>]</p>
-<p class="p1"><span class="Apple-converted-space">    </span>};</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>// <span class="s1">當前狀態</span></p>
-<p class="p1"><span class="Apple-converted-space">    </span>let appState = {</p>
-<p class="p1"><span class="Apple-converted-space">        </span>version: APP_VERSION,</p>
-<p class="p1"><span class="Apple-converted-space">        </span>selectedDate: "Day 1 (10/5)",</p>
-<p class="p1"><span class="Apple-converted-space">        </span>itinerary: initialItinerary</p>
-<p class="p1"><span class="Apple-converted-space">    </span>};</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>// <span class="s1">儲存至</span> localStorage <span class="s1">並更新狀態指示燈</span></p>
-<p class="p1"><span class="Apple-converted-space">    </span>function saveState() {</p>
-<p class="p1"><span class="Apple-converted-space">        </span>try {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));</p>
-<p class="p1"><span class="Apple-converted-space">            </span>const badge = document.getElementById("status-badge");</p>
-<p class="p1"><span class="Apple-converted-space">            </span>badge.textContent = "<span class="s2">💾</span> <span class="s1">已儲存</span>";</p>
-<p class="p1"><span class="Apple-converted-space">            </span>badge.style.color = "var(--primary)";</p>
-<p class="p1"><span class="Apple-converted-space">        </span>} catch (e) {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>const badge = document.getElementById("status-badge");</p>
-<p class="p1"><span class="Apple-converted-space">            </span>badge.textContent = "<span class="s2">⚠️</span> <span class="s1">儲存失敗</span>";</p>
-<p class="p1"><span class="Apple-converted-space">            </span>badge.style.color = "#d9534f";</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p1"><span class="Apple-converted-space">    </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>// <span class="s1">從</span> localStorage <span class="s1">還原資料</span></p>
-<p class="p1"><span class="Apple-converted-space">    </span>function loadState() {</p>
-<p class="p1"><span class="Apple-converted-space">        </span>const saved = localStorage.getItem(STORAGE_KEY);</p>
-<p class="p1"><span class="Apple-converted-space">        </span>if (saved) {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>try {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>const parsed = JSON.parse(saved);</p>
-<p class="p1"><span class="Apple-converted-space">                </span>if (parsed.version === APP_VERSION) {</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>appState = parsed;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>}</p>
-<p class="p1"><span class="Apple-converted-space">            </span>} catch (e) {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>console.error("<span class="s1">還原資料失敗，使用預設值</span>", e);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p1"><span class="Apple-converted-space">    </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>// <span class="s1">匯率計算邏輯</span></p>
-<p class="p1"><span class="Apple-converted-space">    </span>function convertCurrency(source) {</p>
-<p class="p1"><span class="Apple-converted-space">        </span>const jpyInput = document.getElementById("jpy-input");</p>
-<p class="p1"><span class="Apple-converted-space">        </span>const hkdInput = document.getElementById("hkd-input");</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>if (source === 'JPY') {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>const val = parseFloat(jpyInput.value);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>hkdInput.value = isNaN(val) ? "" : (val * exchangeRate).toFixed(1);</p>
-<p class="p1"><span class="Apple-converted-space">        </span>} else {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>const val = parseFloat(hkdInput.value);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>jpyInput.value = isNaN(val) ? "" : Math.round(val / exchangeRate);</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p1"><span class="Apple-converted-space">    </span>}</p>
-<p class="p2"><br></p>
-<p class="p3"><span class="s3"><span class="Apple-converted-space">    </span>// </span>渲染日期切換按鈕</p>
-<p class="p1"><span class="Apple-converted-space">    </span>function renderDateNav() {</p>
-<p class="p1"><span class="Apple-converted-space">        </span>const nav = document.getElementById("date-nav");</p>
-<p class="p1"><span class="Apple-converted-space">        </span>nav.innerHTML = "";</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>Object.keys(appState.itinerary).forEach(dateKey =&gt; {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>const btn = document.createElement("button");</p>
-<p class="p1"><span class="Apple-converted-space">            </span>btn.className = `date-btn ${dateKey === appState.selectedDate ? 'active' : ''}`;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>btn.textContent = dateKey;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>btn.onclick = () =&gt; {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>appState.selectedDate = dateKey;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>saveState();</p>
-<p class="p1"><span class="Apple-converted-space">                </span>renderDateNav();</p>
-<p class="p1"><span class="Apple-converted-space">                </span>renderTimeline();</p>
-<p class="p1"><span class="Apple-converted-space">            </span>};</p>
-<p class="p1"><span class="Apple-converted-space">            </span>nav.appendChild(btn);</p>
-<p class="p1"><span class="Apple-converted-space">        </span>});</p>
-<p class="p1"><span class="Apple-converted-space">    </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>// <span class="s1">渲染行程卡片</span></p>
-<p class="p1"><span class="Apple-converted-space">    </span>function renderTimeline() {</p>
-<p class="p1"><span class="Apple-converted-space">        </span>const container = document.getElementById("timeline");</p>
-<p class="p1"><span class="Apple-converted-space">        </span>container.innerHTML = "";</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>const items = appState.itinerary[appState.selectedDate] || [];</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>items.forEach(item =&gt; {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>const card = document.createElement("div");</p>
-<p class="p1"><span class="Apple-converted-space">            </span>card.className = "item-card";</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">            </span>const mapUrl = `https://www.google.com/maps/search/?api=1&amp;query=${encodeURIComponent(item.searchQuery || item.title)}`;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">            </span>card.innerHTML = `</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;div class="time-badge"&gt;${item.time}&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;div class="spot-name"&gt;${item.title}&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;div class="traffic-box"&gt;${item.traffic}&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;div class="notes-box"&gt;${item.notes.replace(/\n/g, '&lt;br&gt;')}&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;div class="card-actions"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>&lt;a href="${mapUrl}" target="_blank" class="btn-map"&gt;<span class="s2">📍</span> <span class="s1">地圖導航</span>&lt;/a&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>`;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>container.appendChild(card);</p>
-<p class="p1"><span class="Apple-converted-space">        </span>});</p>
-<p class="p1"><span class="Apple-converted-space">    </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>// <span class="s1">初始化</span> App</p>
-<p class="p1"><span class="Apple-converted-space">    </span>function init() {</p>
-<p class="p1"><span class="Apple-converted-space">        </span>loadState();</p>
-<p class="p1"><span class="Apple-converted-space">        </span>renderDateNav();</p>
-<p class="p1"><span class="Apple-converted-space">        </span>renderTimeline();</p>
-<p class="p1"><span class="Apple-converted-space">    </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>init();</p>
-<p class="p1">&lt;/script&gt;</p>
-<p class="p1">&lt;/body&gt;</p>
-<p class="p1">&lt;/html&gt;</p>
+
+<div class="app-container">
+    <!-- Header 區塊 -->
+    <header>
+        <h1>福岡行程助手</h1>
+        <div id="status-badge" class="status-badge">💾 已儲存</div>
+    </header>
+
+    <!-- 匯率計算器區塊 -->
+    <div class="calculator-card">
+        <div class="card-title">
+            <span>💱 雙向匯率計算器</span>
+            <span style="font-size: 0.75rem; color: var(--text-sub);">1 JPY = 0.052 HKD</span>
+        </div>
+        <div class="calc-inputs">
+            <div class="input-group">
+                <label for="jpy-input">日圓 (JPY ¥)</label>
+                <input type="number" id="jpy-input" placeholder="0" oninput="convertCurrency('JPY')">
+            </div>
+            <div class="input-group">
+                <label for="hkd-input">港幣 (HKD $)</label>
+                <input type="number" id="hkd-input" placeholder="0" oninput="convertCurrency('HKD')">
+            </div>
+        </div>
+    </div>
+
+    <!-- 日期導覽按鈕區塊 -->
+    <div class="date-nav" id="date-nav"></div>
+
+    <!-- 行程動態列表區塊 -->
+    <div class="timeline" id="timeline"></div>
+</div>
+
+<!-- 3. JavaScript 邏輯：狀態管理、LocalStorage 儲存與事件處理 -->
+<script>
+    // 系統版本號與 LocalStorage 儲存 Key
+    const APP_VERSION = "1.0.0";
+    const STORAGE_KEY = "fukuoka_trip_data_v1";
+
+    // 匯率預設值：1 JPY = 0.052 HKD
+    let exchangeRate = 0.052;
+
+    // 預設行程資料
+    const initialItinerary = {
+        "Day 1 (10/5)": [
+            {
+                time: "15:00",
+                title: "抵達福岡機場 ➔ 飯店 Check-in",
+                traffic: "🚇 地鐵：空港線至博多站，轉七隈線至「渡邊通站」(2號出口，車資 ¥470)",
+                notes: "福岡蒙特埃馬納酒店辦理入住、卸下行李。",
+                searchQuery: "Hotel Monterey La Soeur Fukuoka"
+            },
+            {
+                time: "16:30",
+                title: "祇園周邊輕鬆散步",
+                traffic: "🚶 步行：渡邊通 ➔ 祇園約 12-15 分鐘",
+                notes: "• Full Full 明太子麵包（10:00-19:00）\n• FUK COFFEE（08:00-20:00）\n• 櫛田神社（17:00 關門）",
+                searchQuery: "櫛田神社"
+            }
+        ],
+        "Day 2 (10/6)": [
+            {
+                time: "09:30",
+                title: "前往 THE OUTLETS KITAKYUSHU",
+                traffic: "🚇 地鐵：渡邊通 ➔ 博多（¥210）\n🚆 JR：博多 ➔ スペースワールド站（¥1,130）",
+                notes: "JR 快速列車每小時 3-4 班，車程約 60 分鐘。",
+                searchQuery: "THE OUTLETS KITAKYUSHU"
+            }
+        ]
+    };
+
+    // 應用程式狀態管理
+    let appState = {
+        version: APP_VERSION,
+        selectedDate: "Day 1 (10/5)",
+        itinerary: initialItinerary
+    };
+
+    // 自動儲存至 LocalStorage
+    function saveState() {
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+            const badge = document.getElementById("status-badge");
+            badge.textContent = "💾 已儲存";
+            badge.style.color = "var(--primary)";
+        } catch (e) {
+            const badge = document.getElementById("status-badge");
+            badge.textContent = "⚠️ 儲存失敗";
+            badge.style.color = "#d9534f";
+        }
+    }
+
+    // 從 LocalStorage 還原資料
+    function loadState() {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                if (parsed.version === APP_VERSION) {
+                    appState = parsed;
+                }
+            } catch (e) {
+                console.error("解析 LocalStorage 資料失敗", e);
+            }
+        }
+    }
+
+    // 雙向匯率計算邏輯
+    function convertCurrency(source) {
+        const jpyInput = document.getElementById("jpy-input");
+        const hkdInput = document.getElementById("hkd-input");
+
+        if (source === 'JPY') {
+            const val = parseFloat(jpyInput.value);
+            hkdInput.value = isNaN(val) ? "" : (val * exchangeRate).toFixed(1);
+        } else {
+            const val = parseFloat(hkdInput.value);
+            jpyInput.value = isNaN(val) ? "" : Math.round(val / exchangeRate);
+        }
+    }
+
+    // 渲染日期選單
+    function renderDateNav() {
+        const nav = document.getElementById("date-nav");
+        nav.innerHTML = "";
+
+        Object.keys(appState.itinerary).forEach(dateKey => {
+            const btn = document.createElement("button");
+            btn.className = `date-btn ${dateKey === appState.selectedDate ? 'active' : ''}`;
+            btn.textContent = dateKey;
+            btn.onclick = () => {
+                appState.selectedDate = dateKey;
+                saveState();
+                renderDateNav();
+                renderTimeline();
+            };
+            nav.appendChild(btn);
+        });
+    }
+
+    // 渲染行程卡片列表
+    function renderTimeline() {
+        const container = document.getElementById("timeline");
+        container.innerHTML = "";
+
+        const items = appState.itinerary[appState.selectedDate] || [];
+
+        items.forEach(item => {
+            const card = document.createElement("div");
+            card.className = "item-card";
+
+            const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.searchQuery || item.title)}`;
+
+            card.innerHTML = `
+                <div class="time-badge">${item.time}</div>
+                <div class="spot-name">${item.title}</div>
+                <div class="traffic-box">${item.traffic}</div>
+                <div class="notes-box">${item.notes.replace(/\n/g, '<br>')}</div>
+                <div class="card-actions">
+                    <a href="${mapUrl}" target="_blank" class="btn-map">📍 地圖導航</a>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    // 初始化應用程式
+    function init() {
+        loadState();
+        renderDateNav();
+        renderTimeline();
+    }
+
+    init();
+</script>
 </body>
 </html>
