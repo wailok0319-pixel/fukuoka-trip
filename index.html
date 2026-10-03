@@ -1,20 +1,17 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <!-- 1. 文件編碼與響應式視圖設定 -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>福岡 6 天 5 夜行程助手</title>
-    
-    <!-- 2. CSS 樣式設定：手機 App 風格與自然系配色 -->
+    <title>福岡 6 天 5 夜精緻行程助手</title>
     <style>
         :root {
-            --primary: #4A6B5D;       /* 主色：自然橄欖綠 */
-            --primary-light: #E8EFEA; /* 淺綠底色 */
-            --bg: #F7F6F2;            /* 背景：柔和米白 */
-            --card-bg: #FFFFFF;       /* 卡片：純白 */
-            --text-main: #2C3E35;     /* 主文字顏色 */
-            --text-sub: #6B7C72;      /* 次要文字顏色 */
+            --primary: #4A6B5D;       /* 沉穩橄欖綠 */
+            --primary-light: #E8EFEA; /* 淺綠背景色 */
+            --bg: #F7F6F2;            /* 柔和米白背景 */
+            --card-bg: #FFFFFF;       /* 純白卡片 */
+            --text-main: #2C3E35;     /* 主要文字 */
+            --text-sub: #6B7C72;      /* 次要文字 */
             --shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
             --radius: 16px;
         }
@@ -38,11 +35,10 @@
         .app-container {
             width: 100%;
             max-width: 480px;
-            background: var(--bg);
             padding-bottom: 40px;
         }
 
-        /* 頂部標頭與狀態顯示 */
+        /* 標頭與儲存狀態 */
         header {
             display: flex;
             justify-content: space-between;
@@ -114,7 +110,7 @@
             border-color: var(--primary);
         }
 
-        /* 日期選擇按鈕區 */
+        /* 日期選擇按鈕列 */
         .date-nav {
             display: flex;
             gap: 8px;
@@ -148,7 +144,19 @@
             box-shadow: 0 2px 8px rgba(74, 107, 93, 0.3);
         }
 
-        /* 行程時間軸與卡片 */
+        /* 每日交通建議備註 */
+        .day-summary-card {
+            background: var(--primary-light);
+            border-radius: 12px;
+            padding: 12px;
+            font-size: 0.825rem;
+            color: var(--primary);
+            margin-bottom: 16px;
+            line-height: 1.4;
+            font-weight: 500;
+        }
+
+        /* 行程卡片 */
         .timeline {
             display: flex;
             flex-direction: column;
@@ -221,13 +229,12 @@
 <body>
 
 <div class="app-container">
-    <!-- Header 區塊 -->
     <header>
-        <h1>福岡行程助手</h1>
+        <h1>福岡 6 天 5 夜行程助手</h1>
         <div id="status-badge" class="status-badge">💾 已儲存</div>
     </header>
 
-    <!-- 匯率計算器區塊 -->
+    <!-- 匯率計算器 -->
     <div class="calculator-card">
         <div class="card-title">
             <span>💱 雙向匯率計算器</span>
@@ -245,59 +252,216 @@
         </div>
     </div>
 
-    <!-- 日期導覽按鈕區塊 -->
+    <!-- 日期選單 -->
     <div class="date-nav" id="date-nav"></div>
 
-    <!-- 行程動態列表區塊 -->
+    <!-- 每日交通提示摘要 -->
+    <div class="day-summary-card" id="day-summary"></div>
+
+    <!-- 行程列表 -->
     <div class="timeline" id="timeline"></div>
 </div>
 
-<!-- 3. JavaScript 邏輯：狀態管理、LocalStorage 儲存與事件處理 -->
 <script>
-    // 系統版本號與 LocalStorage 儲存 Key
-    const APP_VERSION = "1.0.0";
-    const STORAGE_KEY = "fukuoka_trip_data_v1";
+    // 升級版本號以覆蓋舊有的 2 天快取資料
+    const APP_VERSION = "1.1.0";
+    const STORAGE_KEY = "fukuoka_trip_data_v2";
 
-    // 匯率預設值：1 JPY = 0.052 HKD
     let exchangeRate = 0.052;
 
-    // 預設行程資料
+    // 每日交通提示與建議摘要
+    const daySummaries = {
+        "Day 1 (10/5)": "💰 本日地鐵總車資：約 ¥470 ~ ¥680\n💡 交通建議：搭乘次數少，直接感應 IC 卡 / 信用卡搭乘即可。",
+        "Day 2 (10/6)": "💰 本日交通車資：地鐵約 ¥630 + JR 往返 ¥2,260\n💡 交通建議：地鐵未達 ¥640 上限直接刷卡；JR 票價不適用地鐵券。",
+        "Day 3 (10/7)": "💰 本日地鐵原車資：¥730\n🎫 交通建議：【建議使用地鐵一日券 / 信用卡感應刷卡封頂 ¥640】",
+        "Day 4 (10/8)": "💰 本日地鐵原車資：¥730 (+公車約 ¥480)\n🎫 交通建議：地鐵部分【建議使用地鐵一日券 / 信用卡感應刷卡封頂 ¥640】",
+        "Day 5 (10/9)": "💰 本日地鐵原車資：¥760\n🎫 交通建議：【建議使用地鐵一日券 / 信用卡感應刷卡封頂 ¥640】",
+        "Day 6 (10/10)": "💰 本日地鐵總車資：¥470\n💡 交通建議：次數少、未達 ¥640，直接感應刷卡乘車即可。"
+    };
+
+    // 完整 6 天行程資料集
     const initialItinerary = {
         "Day 1 (10/5)": [
             {
                 time: "15:00",
                 title: "抵達福岡機場 ➔ 飯店 Check-in",
-                traffic: "🚇 地鐵：空港線至博多站，轉七隈線至「渡邊通站」(2號出口，車資 ¥470)",
-                notes: "福岡蒙特埃馬納酒店辦理入住、卸下行李。",
+                traffic: "🚇 地鐵：空港線至博多站，轉七隈線至「渡邊通站」（¥470）\n(或計程車約 15 分鐘，約 ¥2,000)",
+                notes: "福岡蒙特埃馬納酒店（Hotel Monterey La Soeur Fukuoka）辦理 Check-in 卸下行李。",
                 searchQuery: "Hotel Monterey La Soeur Fukuoka"
             },
             {
                 time: "16:30",
                 title: "祇園周邊輕鬆散步",
-                traffic: "🚶 步行：渡邊通 ➔ 祇園約 12-15 分鐘",
-                notes: "• Full Full 明太子麵包（10:00-19:00）\n• FUK COFFEE（08:00-20:00）\n• 櫛田神社（17:00 關門）",
+                traffic: "🚶 步行：渡邊通 ➔ 祇園約 12-15 分鐘（亦可搭地鐵七隈線 1 站 ¥210）",
+                notes: "• The Full Full Hakata 明太子麵包（10:00-19:00）\n• FUK COFFEE 飲啡+布丁（08:00-20:00）\n• 櫛田神社（17:00 關門）",
                 searchQuery: "櫛田神社"
+            },
+            {
+                time: "18:00",
+                title: "博多運河城 (Alpen FUKUOKA) + ShinShin 拉麵",
+                traffic: "🚶 步行：櫛田神社 ➔ 運河城約 5 分鐘，運河城 ➔ KITTE博多約 8 分鐘",
+                notes: "• Alpen FUKUOKA：營業至 21:00（九州最大足球專區）\n• ShinShin KITTE店：11:00-23:00（4.2★）",
+                searchQuery: "博多運河城"
+            },
+            {
+                time: "21:00",
+                title: "中洲屋台 宵夜體驗 ➔ 返回飯店",
+                traffic: "🚶 步行：中洲 ➔ 渡邊通飯店約 10 分鐘",
+                notes: "中洲屋台位於運河城與飯店之間，體驗道地宵夜文化。",
+                searchQuery: "中洲屋台"
             }
         ],
         "Day 2 (10/6)": [
             {
                 time: "09:30",
-                title: "前往 THE OUTLETS KITAKYUSHU",
-                traffic: "🚇 地鐵：渡邊通 ➔ 博多（¥210）\n🚆 JR：博多 ➔ スペースワールド站（¥1,130）",
-                notes: "JR 快速列車每小時 3-4 班，車程約 60 分鐘。",
+                title: "飯店 ➔ 博多站 ➔ THE OUTLETS KITAKYUSHU",
+                traffic: "1. 渡邊通 ➔ 博多（地鐵七隈線，¥210）\n2. 博多 ➔ スペースワールド（JR 快速，¥1,130）",
+                notes: "JR 快速列車車次密集（每小時 3-4 班，車程約 60 分鐘）。",
                 searchQuery: "THE OUTLETS KITAKYUSHU"
+            },
+            {
+                time: "午間",
+                title: "THE OUTLETS KITAKYUSHU 購物 & 美食街午餐",
+                traffic: "🚶 園區內步行",
+                notes: "專區 10:00-20:00 / 美食街 11:00-21:00。",
+                searchQuery: "THE OUTLETS KITAKYUSHU"
+            },
+            {
+                time: "16:00",
+                title: "返回博多站 ➔ 回飯店放戰利品休息",
+                traffic: "1. スペースワールド ➔ 博多（JR 快速，¥1,130）\n2. 博多 ➔ 渡邊通（地鐵七隈線，¥210）",
+                notes: "先回飯店放下購物袋稍作休息。",
+                searchQuery: "Hotel Monterey La Soeur Fukuoka"
+            },
+            {
+                time: "18:30",
+                title: "晚餐：Taigen（泰元燒肉 舞鶴店）",
+                traffic: "🚕 計程車約 6 分鐘（約 ¥1,000）或 天神 ➔ 赤坂地鐵（¥210）",
+                notes: "• 營業時間：17:00-22:00（4.6★）\n• 地址：中央區舞鶴 3-1-8（建議提前預訂）",
+                searchQuery: "泰元燒肉 舞鶴店"
+            }
+        ],
+        "Day 3 (10/7)": [
+            {
+                time: "11:30",
+                title: "午餐：Nobosemon（天婦羅）",
+                traffic: "🚇 地鐵：渡邊通 ➔ 天神 ➔ 西新站（¥260）",
+                notes: "• 營業時間：11:30-15:00（4.3★）\n• 地址：早良區西新 5-1-11",
+                searchQuery: "Nobosemon 福岡"
+            },
+            {
+                time: "13:30",
+                title: "天神商場巡禮",
+                traffic: "🚇 地鐵：西新站 ➔ 天神站（¥260）",
+                notes: "天神地下街、福岡 PARCO、Mina 天神、ONE FUKUOKA BLDG.，各大商場地下道直通。",
+                searchQuery: "天神地下街"
+            },
+            {
+                time: "15:30",
+                title: "點心/散步：西通りプリン + 藥院雜貨",
+                traffic: "🚶 步行：天神 ➔ 大名 ➔ 藥院散步圈（約 8-10 分鐘）",
+                notes: "1. 西通りプリン 大名本店（11:00-20:00）\n2. 藥院雜貨（HIGHTIDE / B·B·B POTTERS）",
+                searchQuery: "西通りプリン 大名本店"
+            },
+            {
+                time: "18:00",
+                title: "晚餐：寿司 水鱼（鮨 水魚）",
+                traffic: "🚶 步行：藥院/天神南 ➔ 渡邊通/春吉（步行約 8 分鐘，或地鐵 ¥210）",
+                notes: "• 營業時間：17:00-23:00（4.6★）\n• 地址：中央區春吉 3-24-4（建議提前預訂）",
+                searchQuery: "鮨 水魚 福岡"
+            }
+        ],
+        "Day 4 (10/8)": [
+            {
+                time: "11:30",
+                title: "午餐：Tomoike（豚白湯創作麺処 友池）",
+                traffic: "🚇 地鐵：渡邊通 ➔ 藤崎站/西新站（¥260）",
+                notes: "• 營業時間：11:30-18:45（4.5★）\n• 地址：早良區昭代 3-12-20",
+                searchQuery: "豚白湯創作麺処 友池"
+            },
+            {
+                time: "13:00",
+                title: "大濠公園 / 舞鶴公園 散步",
+                traffic: "🚇 地鐵：藤崎 ➔ 大濠公園站（¥210）",
+                notes: "大濠公園 3 號出口，悠閒散步，可於 33 CAFÉ GREEN 喝咖啡。",
+                searchQuery: "大濠公園"
+            },
+            {
+                time: "16:30",
+                title: "前往 LaLaport Fukuoka (鋼彈 + KAMO 足球店)",
+                traffic: "1. 大濠公園 ➔ 博多（地鐵 ¥260）\n2. 博多站筑紫口 ➔ LaLaport（西鐵公車 ¥240）",
+                notes: "• 看 1:1 鋼彈立像夜間打燈\n• 逛 3F SOCCER SHOP KAMO（10:00-21:00）",
+                searchQuery: "Mitsui Shopping Park LaLaport FUKUOKA"
+            },
+            {
+                time: "19:30",
+                title: "晚餐：LaLaport 美食街 ➔ 返回飯店",
+                traffic: "🚌 公車：LaLaport ➔ 博多/天神（西鐵公車 ¥240 / 計程車約 ¥1,500）",
+                notes: "美食街營業至 22:00。",
+                searchQuery: "LaLaport 福岡"
+            }
+        ],
+        "Day 5 (10/9)": [
+            {
+                time: "11:30",
+                title: "午餐：Kaishinmaru（博多割烹 流れ鮨 海進丸）",
+                traffic: "🚇 地鐵：渡邊通 ➔ 天神 ➔ 西新站（¥260）",
+                notes: "• 營業時間：11:30-15:00（4.4★）\n• 地址：早良區西新 5-1-18",
+                searchQuery: "流れ鮨 海進丸 西新"
+            },
+            {
+                time: "13:30",
+                title: "博多車站商圈採購 (Pokémon Center)",
+                traffic: "🚇 地鐵：西新站 ➔ 博多站（地鐵空港線，¥290）",
+                notes: "Pokémon Center FUKUOKA 位於 KITTE博多 2F（營業至 21:00）。",
+                searchQuery: "Pokémon Center FUKUOKA"
+            },
+            {
+                time: "18:00",
+                title: "晚餐（二選一）：鳥雞研究團 / 水炊鍋",
+                traffic: "1. 步行：博多站前/祇園區步行約 5-8 分鐘\n2. 地鐵：博多 ➔ 渡邊通回飯店（¥210）",
+                notes: "A. 鳥雞研究團（串燒/拉麵，17:00-00:00）\nB. 博多華味鳥 祇園店（水炊雞肉鍋，17:00-23:00）",
+                searchQuery: "博多華味鳥 祇園店"
+            }
+        ],
+        "Day 6 (10/10)": [
+            {
+                time: "08:30",
+                title: "早餐：Dacomecca 麵包店 / MUEN COFFEE",
+                traffic: "🚇 地鐵：渡邊通 ➔ 博多站（地鐵七隈線，¥210）",
+                notes: "先將大行李寄存在博多站寄物櫃。",
+                searchQuery: "DACOMECCA"
+            },
+            {
+                time: "11:30",
+                title: "午餐：西新初喜 くうてん博多店（壽喜燒）",
+                traffic: "🏢 AMU PLAZA 10 樓",
+                notes: "營業時間：11:00-22:00（4.1★，建議提早預訂）。",
+                searchQuery: "西新初喜 くうてん博多店"
+            },
+            {
+                time: "13:00",
+                title: "JR 博多站內最後手信大採購",
+                traffic: "🏢 博多站大堂構內",
+                notes: "1. 辛子明太子の島本\n2. 努努雞（冷凍炸雞）\n3. MIGNON 迷你牛角包\n4. 治一郎年輪蛋糕",
+                searchQuery: "JR博多站"
+            },
+            {
+                time: "14:00",
+                title: "前往 福岡機場（國際線航廈）",
+                traffic: "🚇 地鐵：博多 ➔ 福岡機場站（¥260，5 分鐘），轉免費接駁巴士約 12 分鐘至國際線\n(計程車直達約 15 分鐘，¥1,500-2,000)",
+                notes: "搭乘 16:00 班機返回香港。",
+                searchQuery: "福岡機場 國際線"
             }
         ]
     };
 
-    // 應用程式狀態管理
     let appState = {
         version: APP_VERSION,
         selectedDate: "Day 1 (10/5)",
         itinerary: initialItinerary
     };
 
-    // 自動儲存至 LocalStorage
     function saveState() {
         try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
@@ -311,7 +475,6 @@
         }
     }
 
-    // 從 LocalStorage 還原資料
     function loadState() {
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
@@ -321,12 +484,11 @@
                     appState = parsed;
                 }
             } catch (e) {
-                console.error("解析 LocalStorage 資料失敗", e);
+                console.error("載入快取失敗", e);
             }
         }
     }
 
-    // 雙向匯率計算邏輯
     function convertCurrency(source) {
         const jpyInput = document.getElementById("jpy-input");
         const hkdInput = document.getElementById("hkd-input");
@@ -340,7 +502,6 @@
         }
     }
 
-    // 渲染日期選單
     function renderDateNav() {
         const nav = document.getElementById("date-nav");
         nav.innerHTML = "";
@@ -359,8 +520,10 @@
         });
     }
 
-    // 渲染行程卡片列表
     function renderTimeline() {
+        const summaryBox = document.getElementById("day-summary");
+        summaryBox.textContent = daySummaries[appState.selectedDate] || "";
+
         const container = document.getElementById("timeline");
         container.innerHTML = "";
 
@@ -375,7 +538,7 @@
             card.innerHTML = `
                 <div class="time-badge">${item.time}</div>
                 <div class="spot-name">${item.title}</div>
-                <div class="traffic-box">${item.traffic}</div>
+                <div class="traffic-box">${item.traffic.replace(/\n/g, '<br>')}</div>
                 <div class="notes-box">${item.notes.replace(/\n/g, '<br>')}</div>
                 <div class="card-actions">
                     <a href="${mapUrl}" target="_blank" class="btn-map">📍 地圖導航</a>
@@ -385,7 +548,6 @@
         });
     }
 
-    // 初始化應用程式
     function init() {
         loadState();
         renderDateNav();
